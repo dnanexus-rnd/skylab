@@ -4,7 +4,8 @@ import "SplitBamByCellBarcode.wdl" as split
 import "CollectMultiplePicardMetrics.wdl" as collect
 import "MergeSortBam.wdl" as merge
 import "CreateCountMatrix.wdl" as count
-import "AlignTagCorrectUmis.wdl" as AlignTagCorrectUmis
+import "OptimusScatterSubworkflow.wdl" as OptimusScatterSubworkflow
+import "ThreePrimeMetrics.wdl" as metrics
 
 # The optimus 3' pipeline processes 10x genomics sequencing data based on the v2
 # chemistry. It corrects cell barcodes and UMIs, aligns reads, marks duplicates, and
@@ -68,7 +69,7 @@ workflow Optimus {
         bam_input = barcoded_bam
     }
 
-    call AlignTagCorrectUmis.AlignTagCorrectUmis {
+    call OptimusScatterSubworkflow.OptimusScatterSubworkflow {
       input:
         bam_array = SplitBamByCellBarcode.bam_output_array,
         tar_star_reference = tar_star_reference,
@@ -78,7 +79,7 @@ workflow Optimus {
 
   call merge.MergeSortBamFiles {
     input:
-      bam_inputs = AlignTagCorrectUmis.bam_outputs
+      bam_inputs = OptimusScatterSubworkflow.bam_outputs
   }
 
   call count.DropSeqToolsDigitalExpression {
@@ -94,13 +95,25 @@ workflow Optimus {
       output_filename = sample_id
   }
 
+  call metrics.MergeCellMetrics {
+    input:
+      metric_files = OptimusScatterSubworkflow.cell_metrics
+  }
+
+  call metrics.MergeGeneMetrics {
+    input:
+      metric_files = OptimusScatterSubworkflow.gene_metrics
+  }
+
   output {
       File bam = MergeSortBamFiles.output_bam
       File matrix = DropSeqToolsDigitalExpression.matrix_output
       File matrix_summary = DropSeqToolsDigitalExpression.matrix_summary
-      Array[Array[File]] tag_gene_exon_log = AlignTagCorrectUmis.tag_gene_exon_log
-      Array[Array[File]] umi_metrics = AlignTagCorrectUmis.umi_metrics
-      Array[Array[File]] duplicate_metrics = AlignTagCorrectUmis.duplicate_metrics
+      Array[Array[File]] tag_gene_exon_log = OptimusScatterSubworkflow.tag_gene_exon_log
+      Array[Array[File]] umi_metrics = OptimusScatterSubworkflow.umi_metrics
+      Array[Array[File]] duplicate_metrics = OptimusScatterSubworkflow.duplicate_metrics
       File picard_metrics = CollectMultipleMetrics.alignment_metrics
+      File cell_metrics = MergeCellMetrics.cell_metrics
+      File gene_metrics = MergeGeneMetrics.gene_metrics
   }
 }

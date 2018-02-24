@@ -1,6 +1,8 @@
 import "StarAlignBamSingleEnd.wdl" as star_bam
 import "TagGeneExon.wdl" as tag_gene_exon
 import "CorrectUmiMarkDuplicates.wdl" as umi
+import "TagSortBam.wdl" as tag_sort
+import "ThreePrimeMetrics.wdl" as metrics
 
 workflow AlignTagCorrectUmis {
   Array[File] bam_array
@@ -25,6 +27,27 @@ workflow AlignTagCorrectUmis {
       input:
         bam_input = TagGeneExon.bam_output
     }
+
+    call tag_sort.CellSortBam {
+      input:
+        bam_input = CorrectUmiMarkDuplicates.bam_output
+    }
+
+    call metrics.CalculateCellMetrics {
+      input:
+        sam_input = CellSortBam.sam_output
+    }
+
+    call tag_sort.GeneSortBam {
+      input:
+        bam_input = CorrectUmiMarkDuplicates.bam_output
+    }
+
+    call metrics.CalculateGeneMetrics {
+      input:
+        sam_input = GeneSortBam.sam_output
+    }
+
   }
 
   output {
@@ -32,5 +55,7 @@ workflow AlignTagCorrectUmis {
     Array[File] tag_gene_exon_log = TagGeneExon.log
     Array[File] umi_metrics = CorrectUmiMarkDuplicates.umi_metrics
     Array[File] duplicate_metrics = CorrectUmiMarkDuplicates.duplicate_metrics
+    Array[File] gene_metrics = GeneSortBam.gene_metrics
+    Array[File] cell_metrics = CellSortBam.cell_metrics
   }
 }
