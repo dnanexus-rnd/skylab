@@ -35,7 +35,7 @@ workflow AlignTagCorrectUmis {
 
     call metrics.CalculateCellMetrics {
       input:
-        sam_input = CellSortBam.sam_output
+        bam_input = CellSortBam.bam_output
     }
 
     call tag_sort.GeneSortBam {
@@ -45,7 +45,7 @@ workflow AlignTagCorrectUmis {
 
     call metrics.CalculateGeneMetrics {
       input:
-        sam_input = GeneSortBam.sam_output
+        bam_input = GeneSortBam.bam_output
     }
 
   }

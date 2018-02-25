@@ -4,8 +4,7 @@ task CellSortBam {
   Int estimated_required_disk = ceil(size(bam_input, "G") * 8)
   
   command {
-    # sort the bam file by Cell (CB) and UMI (UB) tags in columns 12, 13
-    samtools view "${bam_input}" | sort --parallel 2 -k12,13 > cell-sorted.sam
+    samtools sort -t GE -t UB -t CB -o cell-sorted.bam "${bam_input}"
   }
   
   runtime {
@@ -16,7 +15,7 @@ task CellSortBam {
   }
   
   output {
-    File sam_output = "cell-sorted.sam"
+    File bam_output = "cell-sorted.bam"
   }
 }
 
@@ -27,7 +26,7 @@ task GeneSortBam {
 
   command {
     # filter the bam by gene tag (GE) then sort on its contents
-    samtools view "${bam_input}" | grep "GE:Z:" | sort --parallel 2 -k15,15 > gene-sorted.sam
+    samtools sort -t UB -t CB -t GE -o gene-sorted.bam "${bam_input}"
   }
   runtime {
     docker: "quay.io/humancellatlas/secondary-analysis-samtools:v0.2.2-1.6"
@@ -37,6 +36,6 @@ task GeneSortBam {
   }
 
   output {
-    File sam_output = "gene-sorted.sam"
+    File bam_output = "gene-sorted.bam"
   }
 }
