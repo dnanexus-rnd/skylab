@@ -153,3 +153,7 @@ ENV/
 
 # OS X
 .DS_Store
+
+# DNAnexus stuff
+*.dx.json
+
